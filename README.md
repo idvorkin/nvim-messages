@@ -11,7 +11,9 @@ A plugin designed to let you read messages from messaging apps, supports iMessag
 
 ## Usage
 
-Todo include picture
+TODO: include picture
+
+**NOTE:** imessage is still being implemented - see [IMessageChat.lua](lua/nvim-messages/IMessageChat.lua)
 
 Launch Via Telescope For your chat provider
 

@@ -53,6 +53,7 @@ function IMessageChat:get_messages(chat_id)
       END as user_name,
       message.date as time,
       message.text,
+      message.attributedBody,
       message.is_from_me
     FROM message
     JOIN chat_message_join ON message.ROWID = chat_message_join.message_id
@@ -65,6 +66,10 @@ function IMessageChat:get_messages(chat_id)
   local results = self.db:eval(query_messages, { chat_id })
   for _, row in ipairs(results) do
     row.time = self:convert_apple_time(row.time)
+    if (not row.text or row.text == '') and row.attributedBody then
+      row.text = self:parse_attributed_body(row.attributedBody)
+    end
+    row.attributedBody = nil -- Remove this field after parsing
   end
   return results
 end
@@ -74,6 +79,40 @@ function IMessageChat:convert_apple_time(nanoseconds)
   local seconds = nanoseconds / 1e9
   local unix_timestamp = seconds + 978307200 -- Seconds between 1970-01-01 and 2001-01-01
   return os.date('%Y-%m-%d %H:%M:%S', unix_timestamp)
+end
+
+-- Not working yet
+-- based on  https://github.com/langchain-ai/langchain/pull/13634/commits/1152da66fd5965b21b148c0b6df39629461d9819
+
+function IMessageChat:parse_attributed_body(attributed_body)
+  if not attributed_body then
+    return nil
+  end
+
+  -- Convert the binary data to a Lua string
+  local content = tostring(attributed_body)
+
+  -- Find the position of "NSString"
+  local ns_pos = content:find('NSString')
+  if not ns_pos then
+    return nil
+  end
+
+  -- Skip "NSString" and 5 more bytes
+  local start = ns_pos + 13
+
+  -- Read the length
+  local length = content:byte(start)
+  start = start + 1
+
+  if length == 0x81 then
+    -- For longer messages, length is stored in the next two bytes
+    length = (content:byte(start) * 256) + content:byte(start + 1)
+    start = start + 2
+  end
+
+  -- Extract and return the actual message content
+  return content:sub(start, start + length - 1)
 end
 
 return IMessageChat
