@@ -13,11 +13,13 @@ A plugin designed to let you read messages from messaging apps, supports iMessag
 
 Todo include picture
 
-Launch Telescope
+Launch Via Telescope For your chat provider
 
 ```lua
--- I don't know how to do this...
-
+-- I'm still learning to setup the providers correctly
+command! WorkChat :lua require('nvim-messages').workchat()
+command! MockChat :lua require('nvim-messages').mockchat()
+command! IMessageChat :lua require('nvim-messages').imessage()
 ```
 
 ## Installation
