@@ -14,4 +14,9 @@ M.mockchat = function()
   require('nvim-messages.telescope').show_chats(messagesApp)
 end
 
+M.imessage = function()
+  local messagesApp = require('nvim-messages.IMessageChat').new()
+  require('nvim-messages.telescope').show_chats(messagesApp)
+end
+
 return M
