@@ -1,8 +1,9 @@
-local example = require('nvim-plugin-template').example
+describe('Hello World', function()
+  it('should return the correct greeting', function()
+    local function hello_world()
+      return 'Hello, World!'
+    end
 
-describe('neovim plugin', function()
-  it('work as expect', function()
-    local result = example()
-    assert.is_true(result)
+    assert.are.equal('Hello, World!', hello_world())
   end)
 end)

@@ -1,37 +1,60 @@
-# nvim-plugin-template
+# nvim-messages
 
-Neovim plugin template; includes automatic documentation generation from README, integration tests with Busted, and linting with Stylua
+A plugin designed to let you read messages from messaging apps, supports iMessage, and WorkChat, should be extendable to any messaging app.
+
+**NOTES:**
+
+- This is my first plugin, so bear with me, better yet, send PRs
+- Reading messages is much easier than sending messages, so I'm starting there. Again, send PRs
+- UX is hard, so I'm starting with a telescope extension.
+  - I can imagine we get to a [vim-dadbod-ui](https://github.com/kristijanhusak/vim-dadbod-ui) like interface, send a PR
 
 ## Usage
 
-1. Click `use this template` button generate a repo on your github.
-2. Clone your plugin repo. Open terminal then cd plugin directory.
-3. Run `python3 rename.py your-plugin-name`. This will replace all `nvim-plugin-template` to your `plugin-name`. 
-   Then it will prompt you input `y` or `n` to remove example codes in `init.lua` and
-   `test/plugin_spec.lua`. If you are familiar this repo just input `y`. If you are looking at this template for the first time I suggest you inspect the contents. After this step `rename.py` will also auto-remove.
+Todo include picture
 
-Now you have a clean plugin environment. Enjoy!
+Launch Telescope
 
-## Format
+```lua
+-- I don't know how to do this...
 
-The CI uses `stylua` to format the code; customize the formatting by editing `.stylua.toml`.
+```
 
-## Test
+## Installation
 
-Uses [busted](https://lunarmodules.github.io/busted/) for testing. Installs by using `luarocks --lua-version=5.1 install vusted` then runs `vusted ./test`
-for your test cases. `vusted` is a wrapper of Busted especially for testing Neovim plugins.
+Install via lazy
 
-Create test cases in the `test` folder. Busted expects files in this directory to be named `foo_spec.lua`, with `_spec` as a suffix before the `.lua` file extension. For more usage details please check
-[busted usage](https://lunarmodules.github.io/busted/)
+```lua
+{
+    "idvorkin/nvim-messages.nvim",
+    requires = {
+        {
+            "kkharji/sqlite.lua",
+            "nvim-telescope/telescope.nvim",
+        },
+    },
+},
+```
 
-## CI
+If you have a custom SQLite location, you need to specify it. For me:
 
-- Auto generates doc from README.
-- Runs the Busted/vusted integration tests
-- Lints with `stylua`.
+```lua
+local sqlite_path = "/Users/idvorkin/homebrew/opt/sqlite/lib/libsqlite3.dylib"
+if vim.loop.fs_stat(sqlite_path) then
+    vim.g.sqlite_clib_path = sqlite_path
+end
+```
 
+## Acknowledgements
 
-## More
+- Inspired from [Langchain Chat Loaders](https://python.langchain.com/docs/integrations/chat_loaders/)
+- Started via [nvim-plugin-template](https://github.com/nvimdev/nvim-plugin-template)
+
+## Development
+
+- Develop a neovim plugin: https://m4xshen.dev/posts/develop-a-neovim-plugin-in-lua
+- Neovim best practices: https://github.com/nvim-neorocks/nvim-best-practices
+- A nice [video](https://www.youtube.com/watch?v=yN04HCeOjmo&ab_channel=Cloud-NativeCorner) on how to structure a plugin, with [slides](https://github.com/Piotr1215/youtube/blob/main/nvim-plugins/slides.md)
 
 To see this template in action, take a look at my other plugins.
 
