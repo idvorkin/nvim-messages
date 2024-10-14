@@ -81,7 +81,8 @@ local function thread_preview(messagesApp)
         messages = {}
       end
 
-      for _, message in ipairs(messages) do
+      for i = #messages, 1, -1 do
+        local message = messages[i]
         local first_name = (message.user_name or ''):match('^(%S+)')
         local merged_string = first_name .. ': ' .. (message.text or '')
         merged_string = merged_string:gsub('[\n\r]', ' '):gsub('%s+', ' ')
@@ -93,6 +94,7 @@ local function thread_preview(messagesApp)
       end
       vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, preview_lines)
       apply_highlights(self.state.bufnr, preview_lines)
+      vim.api.nvim_command('normal! G')
     end,
   })
 end
@@ -124,27 +126,22 @@ local function chat_pickers(opts, messagesApp)
           -- Get messages for the selected thread
           local messages = messagesApp:get_messages(thread.id)
           local buf_lines = {}
-          for _, message in ipairs(messages) do
+          for i = #messages, 1, -1 do
+            local message = messages[i]
             local first_name = (message.user_name or ''):match('^(%S+)')
             local merged_string = first_name .. ': ' .. (message.text or '')
             merged_string = merged_string:gsub('[\n\r]', ' '):gsub('%s+', ' ')
             table.insert(buf_lines, merged_string)
           end
 
-          -- Reverse the order of lines before setting them in the buffer.
-          local reversed_buf_lines = {}
-          for i = #buf_lines, 1, -1 do
-            table.insert(reversed_buf_lines, buf_lines[i])
-          end
-
           -- Set the buffer contents
-          vim.api.nvim_buf_set_lines(buf, 0, -1, false, reversed_buf_lines)
+          vim.api.nvim_buf_set_lines(buf, 0, -1, false, buf_lines)
 
           -- Open the buffer in a new window
           vim.api.nvim_command('new')
           vim.api.nvim_win_set_buf(0, buf)
 
-          apply_highlights(buf, reversed_buf_lines)
+          apply_highlights(buf, buf_lines)
 
           -- Jump to the bottom line
           vim.api.nvim_command('normal! G')
