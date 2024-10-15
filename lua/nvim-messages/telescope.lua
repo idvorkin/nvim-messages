@@ -68,33 +68,44 @@ local function apply_highlights(bufnr, lines)
   end
 end
 
+local function AddThreadPreviewToWindow(bufnr, winid, messagesApp, thread_id)
+  local messages = messagesApp:get_messages(thread_id)
+  local preview_lines = {}
+
+  -- Ensure messages is a table
+  if type(messages) ~= 'table' then
+    messages = {}
+  end
+
+  for i = #messages, 1, -1 do
+    local message = messages[i]
+    local first_name = (message.user_name or ''):match('^(%S+)')
+    local merged_string = first_name .. ': ' .. (message.text or '')
+    merged_string = merged_string:gsub('[\n\r]', ' '):gsub('%s+', ' ')
+    table.insert(preview_lines, merged_string)
+  end
+
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, preview_lines)
+  apply_highlights(bufnr, preview_lines)
+
+  if winid then
+    -- Scroll the window to the bottom
+    -- Use vim.schedule to defer the cursor movement to the next event loop iteration
+    -- (otherwise buffer content isn't loaded yet)
+    vim.schedule(function()
+      local line_count = vim.api.nvim_buf_line_count(bufnr)
+      vim.api.nvim_win_set_cursor(winid, { line_count, 0 })
+    end)
+  end
+end
+
 local function thread_preview(messagesApp)
   local previewers = require('telescope.previewers')
   return previewers.new_buffer_previewer({
     title = 'Thread Preview',
     define_preview = function(self, entry, _status)
       local thread = entry.value
-      local preview_lines = {}
-      local messages = messagesApp:get_messages(thread.id)
-      -- if messages isn't a table, make it a blank table
-      if type(messages) ~= 'table' then
-        messages = {}
-      end
-
-      for i = #messages, 1, -1 do
-        local message = messages[i]
-        local first_name = (message.user_name or ''):match('^(%S+)')
-        local merged_string = first_name .. ': ' .. (message.text or '')
-        merged_string = merged_string:gsub('[\n\r]', ' '):gsub('%s+', ' ')
-        table.insert(preview_lines, merged_string)
-      end
-
-      for _, e in ipairs(thread) do
-        table.insert(preview_lines, e)
-      end
-      vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, preview_lines)
-      apply_highlights(self.state.bufnr, preview_lines)
-      vim.api.nvim_command('normal! G')
+      AddThreadPreviewToWindow(self.state.bufnr, self.state.winid, messagesApp, thread.id)
     end,
   })
 end
@@ -123,28 +134,11 @@ local function chat_pickers(opts, messagesApp)
           vim.api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
           vim.api.nvim_buf_set_name(buf, 'Thread: ' .. thread.display_name)
 
-          -- Get messages for the selected thread
-          local messages = messagesApp:get_messages(thread.id)
-          local buf_lines = {}
-          for i = #messages, 1, -1 do
-            local message = messages[i]
-            local first_name = (message.user_name or ''):match('^(%S+)')
-            local merged_string = first_name .. ': ' .. (message.text or '')
-            merged_string = merged_string:gsub('[\n\r]', ' '):gsub('%s+', ' ')
-            table.insert(buf_lines, merged_string)
-          end
-
-          -- Set the buffer contents
-          vim.api.nvim_buf_set_lines(buf, 0, -1, false, buf_lines)
-
           -- Open the buffer in a new window
           vim.api.nvim_command('new')
-          vim.api.nvim_win_set_buf(0, buf)
-
-          apply_highlights(buf, buf_lines)
-
-          -- Jump to the bottom line
-          vim.api.nvim_command('normal! G')
+          local win = vim.api.nvim_get_current_win()
+          vim.api.nvim_win_set_buf(win, buf)
+          AddThreadPreviewToWindow(buf, win, messagesApp, thread.id)
         end)
 
         return true
