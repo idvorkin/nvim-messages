@@ -43,18 +43,17 @@ end
 -- Call this function when your plugin loads
 setup_highlight_groups()
 
-local self = 'Igor'
-
 local function apply_highlights(bufnr, lines)
   local ns_id = vim.api.nvim_create_namespace('chat_highlights')
   local name_groups = {}
   local group_index = 1
   local max_groups = 5 -- Matches the number of ChatName groups we defined
+  local self_name_to_highlight = 'Igor' -- TODO: make this dynamic
 
   for i, line in ipairs(lines) do
     local name = line:match('^(%S+):')
     if name then
-      if name == self then
+      if name == self_name_to_highlight then
         name_groups[name] = 'ChatNameSelf'
       elseif not name_groups[name] then
         name_groups[name] = 'ChatName' .. group_index
@@ -119,7 +118,7 @@ local function chat_pickers(opts, messagesApp)
       previewer = thread_preview(messagesApp),
       finder = threads_finder(messagesApp),
       sorter = conf.generic_sorter(opts),
-      attach_mappings = function(prompt_bufnr, map)
+      attach_mappings = function(prompt_bufnr, _map)
         local actions = require('telescope.actions')
         local action_state = require('telescope.actions.state')
 
@@ -157,7 +156,8 @@ end
 --print(i, thread)
 --end
 
-local l = {
+-- alternative layouts
+local _ = {
   layout_strategy = 'vertical',
   layout_config = {
     vertical = {
