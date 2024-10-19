@@ -1,9 +1,8 @@
-local M = {}
-
 local sqlite = require('sqlite')
 local MessagesApp = require('nvim-messages.messages_app')
 
 local WorkChatMessagesApp = setmetatable({}, { __index = MessagesApp })
+
 WorkChatMessagesApp.__index = WorkChatMessagesApp
 
 function WorkChatMessagesApp.new()
@@ -24,13 +23,16 @@ function WorkChatMessagesApp:get_threads()
         SELECT (coalesce(T.thread_name, STN.thread_name, CPTN.thread_name)) AS display_name ,
             (coalesce(T.thread_name, STN.thread_name, CPTN.thread_name)) AS name ,
             cast( T.thread_key as  text) as id,
-            datetime(T.last_activity_timestamp_ms/1000 + strftime("%s", "1970-01-01") ,"unixepoch","localtime") as lasttime,
+            datetime(T.last_activity_timestamp_ms/1000 + strftime("%s", "1970-01-01") ,"unixepoch","localtime")
+               as last_activity,
+            datetime(T.last_read_watermark_timestamp_ms/1000 + strftime("%s", "1970-01-01") ,"unixepoch","localtime")
+               as last_read,
             T.snippet as text
 
         FROM threads AS T
         LEFT OUTER JOIN _cached_participant_thread_info AS CPTN ON CPTN.thread_key = T.thread_key
         LEFT OUTER JOIN _self_thread_name AS STN ON STN.thread_key = T.thread_key
-        ORDER BY lasttime DESC
+        ORDER BY last_activity DESC
         LIMIT 1000
     ]]
 

@@ -67,20 +67,47 @@ local function apply_highlights(bufnr, lines)
   end
 end
 
-local function AddThreadPreviewToWindow(bufnr, winid, messagesApp, thread_id)
-  local messages = messagesApp:get_messages(thread_id)
+local function AddThreadPreviewToWindow(bufnr, winid, messagesApp, thread)
+  local messages = messagesApp:get_messages(thread.id)
   local preview_lines = {}
+  local last_read_time_as_string = thread.last_read or 0
+  -- last_read is in format 2024-10-18 14:20:40, convert to a unix timestamp
+  local last_read_time = os.time({
+    year = last_read_time_as_string:sub(1, 4),
+    month = last_read_time_as_string:sub(6, 7),
+    day = last_read_time_as_string:sub(9, 10),
+    hour = last_read_time_as_string:sub(12, 13),
+    min = last_read_time_as_string:sub(15, 16),
+    sec = last_read_time_as_string:sub(18, 19),
+  }) or 0
 
   -- Ensure messages is a table
   if type(messages) ~= 'table' then
     messages = {}
   end
 
+  local separator_added = false
+
   for i = #messages, 1, -1 do
     local message = messages[i]
     local first_name = (message.user_name or ''):match('^(%S+)')
     local merged_string = first_name .. ': ' .. (message.text or '')
     merged_string = merged_string:gsub('[\n\r]', ' '):gsub('%s+', ' ')
+
+    -- Add separator before the first unread message
+    local message_time = os.time({
+      year = message.time:sub(1, 4),
+      month = message.time:sub(6, 7),
+      day = message.time:sub(9, 10),
+      hour = message.time:sub(12, 13),
+      min = message.time:sub(15, 16),
+      sec = message.time:sub(18, 19),
+    })
+    if not separator_added and message_time > last_read_time then
+      table.insert(preview_lines, string.rep('-', 40) .. ' New Messages ' .. string.rep('-', 40))
+      separator_added = true
+    end
+
     table.insert(preview_lines, merged_string)
   end
 
@@ -89,8 +116,6 @@ local function AddThreadPreviewToWindow(bufnr, winid, messagesApp, thread_id)
 
   if winid then
     -- Scroll the window to the bottom
-    -- Use vim.schedule to defer the cursor movement to the next event loop iteration
-    -- (otherwise buffer content isn't loaded yet)
     vim.schedule(function()
       local line_count = vim.api.nvim_buf_line_count(bufnr)
       vim.api.nvim_win_set_cursor(winid, { line_count, 0 })
@@ -104,7 +129,7 @@ local function thread_preview(messagesApp)
     title = 'Thread Preview',
     define_preview = function(self, entry, _status)
       local thread = entry.value
-      AddThreadPreviewToWindow(self.state.bufnr, self.state.winid, messagesApp, thread.id)
+      AddThreadPreviewToWindow(self.state.bufnr, self.state.winid, messagesApp, thread)
     end,
   })
 end
@@ -137,7 +162,7 @@ local function chat_pickers(opts, messagesApp)
           vim.api.nvim_command('new')
           local win = vim.api.nvim_get_current_win()
           vim.api.nvim_win_set_buf(win, buf)
-          AddThreadPreviewToWindow(buf, win, messagesApp, thread.id)
+          AddThreadPreviewToWindow(buf, win, messagesApp, thread)
         end)
 
         return true

@@ -1,5 +1,5 @@
-local M = {}
--- based on code at  https://github.com/langchain-ai/langchain/blob/master/libs/community/langchain_community/chat_loaders/imessage.py
+-- based on code at
+-- https://github.com/langchain-ai/langchain/blob/master/libs/community/langchain_community/chat_loaders/imessage.py
 
 local sqlite = require('sqlite')
 local MessagesApp = require('nvim-messages.messages_app')
@@ -20,13 +20,16 @@ function IMessageChat.new()
   return self
 end
 
+---@return Thread[]
 function IMessageChat:get_threads()
+  -- NOTE: last_read isn't implemented correctly yet
   local query_top_message_per_thread = [[
-    SELECT 
+    SELECT
       chat.ROWID as id,
       COALESCE(NULLIF(chat.display_name, ''), chat.chat_identifier) as display_name,
       COALESCE(NULLIF(chat.display_name, ''), chat.chat_identifier) as name,
       MAX(message.date) as lasttime,
+      "2010-10-10 10:10:10" as last_read,
       message.text as text
     FROM chat
     JOIN chat_message_join ON chat.ROWID = chat_message_join.chat_id
@@ -44,10 +47,12 @@ function IMessageChat:get_threads()
   return results
 end
 
+---@param chat_id string
+---@return Message[]
 function IMessageChat:get_messages(chat_id)
   local query_messages = [[
     SELECT
-      CASE 
+      CASE
         WHEN message.is_from_me = 1 THEN 'Me'
         ELSE COALESCE(handle.id, 'Unknown')
       END as user_name,
@@ -76,6 +81,7 @@ end
 
 function IMessageChat:convert_apple_time(nanoseconds)
   -- Convert nanoseconds since 2001-01-01 to Unix timestamp
+  -- TODO debug and fix this function (likely always broken)
   local seconds = nanoseconds / 1e9
   local unix_timestamp = seconds + 978307200 -- Seconds between 1970-01-01 and 2001-01-01
   return os.date('%Y-%m-%d %H:%M:%S', unix_timestamp)
